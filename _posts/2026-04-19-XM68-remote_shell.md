@@ -7,15 +7,15 @@ mermaid: true
 author: "Cameron Smith"
 ---
 
-Over Easter I had a crack at getting a remote shell on a Chinese security camera I purchased off AliExpress. It started as curiosity, wanting to understand what was actually running inside one of these cheap IoT devices devices. It turned into a weekend-long rabbit hole that ended with a persistent root shell implanted directly into the devices firmware.
+Over Easter I had a crack at getting a remote shell on a Chinese security camera I purchased off AliExpress. It started as curiosity, wanting to understand what was actually running inside one of these cheap IoT devices. It turned into a weekend-long rabbit hole that ended with a persistent root shell implanted directly into the devices firmware.
 
 ![XM68 dual-lens PTZ security camera](/assets/img/posts/XM68-remote-shell/blog/xm68-camera.jpg)
 
 The camera I targeted was a XM68 dual-lens PTZ unit, built on the XM Silicon platform — the same SoC family that underpins a significant proportion of the world's inexpensive IP cameras.
 
-The attack surface on these devices is well-documented, with notable discoveries from SEC Consult's 2018 research ([CVE-2018-17915/17917/17919](https://sec-consult.com/vulnerability-lab/advisory/vulnerabilities-xiongmai-ip-cameras-nvrs-dvrs-cve-2018-17915-cve-2018-17917-cve-2018-17919/)) which identified critical vulnerabilities across millions of Xiongmai devices (the same manufacture as the XM68), and CISA who issued a formal advisory ([ICSA-18-282-06](https://www.cisa.gov/news-events/ics-advisories/icsa-18-282-06)) covering the XMEye P2P cloud stack, which is the back end infrastructure that underpins the cameras cloud connectivity.
+The attack surface on these devices is well-documented, with notable discoveries from SEC Consult's 2018 research ([CVE-2018-17915/17917/17919](https://sec-consult.com/vulnerability-lab/advisory/vulnerabilities-xiongmai-ip-cameras-nvrs-dvrs-cve-2018-17915-cve-2018-17917-cve-2018-17919/)) which identified critical vulnerabilities across millions of Xiongmai devices (the same manufacturer as the XM68), and CISA who issued a formal advisory ([ICSA-18-282-06](https://www.cisa.gov/news-events/ics-advisories/icsa-18-282-06)) covering the XMEye P2P cloud stack, which is the back end infrastructure that underpins the cameras cloud connectivity.
 
-Some other interesting commonly used techniques I found for this family of devices (but weren't nessicarily relevant to the approach I wanted to take) were a UART console with a known shared OEM password, and well-documented remote exploits on port 8899 for retrieving sensitive information from the devices web API.
+Some other interesting commonly used techniques I found for this family of devices (but weren't necessarily relevant to the approach I wanted to take) were a UART console with a known shared OEM password, and well-documented remote exploits on port 8899 for retrieving sensitive information from the devices web API.
 
 The goal of my research was to deliberately ignore well-documented approaches, not taking the fastest path to a shell-prompt and achieving remote access through a firmware implant. With this in mind I used techniques to understand the firmware layout well enough to surgically modify it, building a minimal ARM payload from scratch, and getting code running on embedded hardware through the firmware itself, rather than through a pre-existing hole.
 
@@ -103,7 +103,7 @@ ffplay rtsp://admin:admin@192.168.1.10:554
 
 ![RTSP stream port 554](/assets/img/posts/XM68-remote-shell/reconnaissance/rtsp-port-554.png)
 
-With a baseline of the cameras network services, I moved onto disassembling the device.
+With a baseline of the camera's network services, I moved onto disassembling the device.
 
 ---
 
@@ -149,7 +149,7 @@ The removed PCBs are outlined below.
 
 ### Chip Identification
 
-Whist the below list is not comprehensive, it covers the key chips of interest.
+Whilst the below list is not comprehensive, it covers the key chips of interest.
 
 <table>
 <thead>
@@ -204,7 +204,7 @@ Whist the below list is not comprehensive, it covers the key chips of interest.
 
 ### Extracting with Flashrom
 
-With the device torn down and access gained to its circuit board and chips, the next stage of this approach was to extract the devices firmware.
+With the device torn down and access gained to its circuit board and chips, the next stage of this approach was to extract the device's firmware.
 
 To extract the firmware on the `XMC-25QH64DHIQ SPI NOR Flash`, the CH341A (a low-cost USB programmer with native SPI support) was used. It is well-supported by flashrom and widely used for exactly this class of NOR flash extraction.
 
@@ -219,7 +219,7 @@ Typically the chip clip is the commonly used approach to connect to a target chi
 
 ### Why Not Use the Clip?
 
-The initial approach was to use the CH341A programmer's included 8-pin SOIC clip to read the flash in-circuit. However, this failed as the CH341A drives 3.3 V on the VCC line back powering the camera's SoC through the flash's shared VCC rail. This pulls the chip into an undefined state and corrupting reads.
+The initial approach was to use the CH341A programmer's included 8-pin SOIC clip to read the flash in-circuit. However, this failed as the CH341A drives 3.3 V on the VCC line back powering the camera's SoC through the flash's shared VCC rail. This pulls the chip into an undefined state and corrupts reads.
 
 **Resolution:** I de-soldered the flash IC using a hot air station at ~320 °C with flux, I read it off-board, then re-soldered it to the camera (once modifications are made).
 
@@ -519,9 +519,9 @@ As outlined in the boot args variable, the cramfs file system is the root filesy
 
 ## 4. CramFS Unpacking
 
-With the root file system identifeied, an appropriate tool to unpack its contents was required.
+With the root file system identified, an appropriate tool to unpack its contents was required.
 
-Binwalk's built-in cramfs extraction is unreliable for this image format, as outlined by the errors in running it to extrtact the contents of `1C0000.cramfs`. The correct tool is the `cramfs-tools` project maintained at [github.com/npitre/cramfs-tools](https://github.com/npitre/cramfs-tools).
+Binwalk's built-in cramfs extraction is unreliable for this image format, as outlined by the errors in running it to extract the contents of `1C0000.cramfs`. The correct tool is the `cramfs-tools` project maintained at [github.com/npitre/cramfs-tools](https://github.com/npitre/cramfs-tools).
 
 ### Building cramfs-tools
 
@@ -549,7 +549,7 @@ cramfs-tools/cramfsck -x ./1C0000.cramfs.extracted ./1C0000.cramfs
 
 The extracted cramfs file system at `1C0000` contains the standard busybox-based layout: `bin/`, `etc/`, `lib/`, `sbin/`, etc.
 
-[For those interested, see a full recursive directory lising of `1C0000`.]
+[For those interested, see a full recursive directory listing of `1C0000`.]
 
 <details markdown="1">
 <summary>ls -Rla</summary>
@@ -908,7 +908,7 @@ Currently defined functions:
 
 As noted in the above output, neither `netcat` nor `telnet` appears in the applet list.
 
-Whilst the binairies are absent, the following three problems rule out the ability to add them to the targets cramfs file system:
+Whilst the binaries are absent, the following three problems rule out the ability to add them to the targets cramfs file system:
 
 1. As mentioned, **no `netcat` or `telnet` applet** is compiled into this BusyBox build — confirmed by the full applet enumeration above. There is nothing to leverage.
 2. **The root filesystem (romfs) is only 1280 KB total.** A typical statically-compiled netcat for ARM runs 200–400 KB. Adding it would overflow the partition budget, and `mkcramfs` would produce an image that exceeds the partition boundary — the write would corrupt adjacent partitions.
@@ -928,7 +928,7 @@ This is where the project got interesting. These constraints ruled out every off
 
 ## 5.5 Validating the Modification Pipeline: ICMP Canary
 
-Before investing time into writing and debugging a custom binary, the full `modify → repack → reflash → execute pipeline` needed to be validated end-to-end. The approach for testing the feasibility of this approach was as simple as possible. A single `ping` canary was added to `/etc/init.d/rcS` to confrim injections were actually run on boot. If the canary fires and an ICMP messages are noted on the interface connected between the KALI VM and the XM68, the pipeline is sound and writing the bind shell is worth the effort.
+Before investing time into writing and debugging a custom binary, the full `modify → repack → reflash → execute pipeline` needed to be validated end-to-end. The approach for testing the feasibility of this approach was as simple as possible. A single `ping` canary was added to `/etc/init.d/rcS` to confirm injections were actually run on boot. If the canary fires and ICMP messages are noted on the interface connected between the KALI VM and the XM68, the pipeline is sound and writing the bind shell is worth the effort.
 
 ### Injecting the Canary
 
@@ -968,7 +968,7 @@ sudo flashrom -p ch341a_spi -w XM68-modified.bin
 
 The `conv=notrunc` flag in the dd command above is critical as it overwrites only the cramfs region of the 8 MB binary, leaving the bootloader, kernel, and other partitions intact.
 
-After running these commands and reflashing the modified firmware to the SPI flash, it was removed from the programmer and resoldered to the cameras PCB.
+After running these commands and reflashing the modified firmware to the SPI flash, it was removed from the programmer and resoldered to the camera's PCB.
 
 ![Removing the SPI flash](/assets/img/posts/XM68-remote-shell/firmware-extraction/removing-spi-flash.png)
 
@@ -992,7 +992,7 @@ sudo tcpdump -i any icmp
 08:01:43.445673 eth1  In  IP 192.168.1.10 > 192.168.1.8: ICMP echo request, id 493, seq 9, length 64
 ```
 
-The output above validates that the camera ran the injected ICMP command, with the attacker machine at `192.168.1.8` sending a reply. This confirms that the camera will run modifications to the cramfs filesystem at offset `1C0000`, valditing that the path above is valid.
+The output above validates that the camera ran the injected ICMP command, with the attacker machine at `192.168.1.8` sending a reply. This confirms that the camera will run modifications to the cramfs filesystem at offset `1C0000`, validating that the path above is valid.
 
 This worked because there is no CRC validation, no signature check, no secure boot. The firmware accepted the modified image without complaint and executed it.
 
@@ -1000,13 +1000,13 @@ With the modification pipeline proven, the next step is writing the actual paylo
 
 ---
 
-> Note the SPI flash was desolvered from the camera again and attached to the CH341A's flash breakout board, as noted below:
+> Note the SPI flash was desoldered from the camera again and attached to the CH341A's flash breakout board, as noted below:
 
 ![Attaching to the CH341A breakout board](/assets/img/posts/XM68-remote-shell/firmware-extraction/attaching-spi-flash-to-breakout-board.jpg)
 
 ## 6. The Custom ARM Bind Shell
 
-With the Flash memory removed from the camera and ready for reprogramming, the next step was the creation of a custom ARM binary that could be leveraged to create a reverse shell lister on the XM68, dropping clinets into a root shell upon connection.
+With the Flash memory removed from the camera and ready for reprogramming, the next step was the creation of a custom ARM binary that could be leveraged to create a bind shell listener on the XM68, dropping clients into a root shell upon connection.
 
 ### Design Constraints
 
@@ -1016,7 +1016,7 @@ With the assistance of AI models, the following Static ARM binary was created, c
 
 ### bind.s
 
-The follwing secition outlines the source code of the ARM assembly binary.
+The following section outlines the source code of the ARM assembly binary.
 
 <details markdown="1">
 <summary>bind.s — full ARM assembly source</summary>
@@ -1140,7 +1140,7 @@ argv:
 
 </details>
 
-With the souce code of the binary completed, it was compiled using the following commands:
+With the source code of the binary completed, it was compiled using the following commands:
 
 ### Compilation
 
@@ -1173,11 +1173,11 @@ busybox: ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV),
 
 ### Testing the Binary with QEMU Before Flashing
 
-Before adding the new `bind` shell binary to the cameram there was a need to test it.
+Before adding the new `bind` shell binary to the camera there was a need to test it.
 
 Flashing untested code to a physical device is a good way to brick it. The SPI flash had already been desoldered once — there was no appetite to do it again because of a bad payload. Fortunately, the extracted cramfs root filesystem can be used as a sysroot for `qemu-arm`, letting the ARM binary run directly on the Kali host before a single byte is written back to the flash chip.
 
-The complied `bind` binary was coppied into the `/bin` directory on the camera and was run using `qemu-arm`, as noted below:
+The compiled `bind` binary was copied into the `/bin` directory on the camera and was run using `qemu-arm`, as noted below:
 
 ```bash
 qemu-arm -L .. bind &
@@ -1185,7 +1185,7 @@ qemu-arm -L .. bind &
 
 ![bind running under qemu-arm](/assets/img/posts/XM68-remote-shell/blog/qemu-bind.png)
 
-To validate that the bind binary was creating a listner port on `4444` for all interfaces, a new terminal tab the following command was run:
+To validate that the bind binary was creating a listener port on `4444` for all interfaces, in a new terminal tab the following command was run:
 
 ```bash
 $ netstat -tulpn | grep 4444
@@ -1194,7 +1194,7 @@ tcp  0  0  0.0.0.0:4444  0.0.0.0:*  LISTEN  448443/qemu-arm
 
 ![netstat confirming listener on port 4444](/assets/img/posts/XM68-remote-shell/blog/qemu-netstat-listener-port-4444.png)
 
-With confrimation that the `bind` binary was listening on all interfaces on port 4444, the following command was run to test that it could be connected to and that the client was dropped into a shell:
+With confirmation that the `bind` binary was listening on all interfaces on port 4444, the following command was run to test that it could be connected to and that the client was dropped into a shell:
 
 ```bash
 $ nc 127.0.0.1 4444
@@ -1205,9 +1205,9 @@ $
 
 ![nc connecting to the QEMU bind shell on port 4444](/assets/img/posts/XM68-remote-shell/blog/qemu-bind-reverse-shell-success.png)
 
-With the shell confrimed, we know the binary accepts connections, forks a child, redirects stdio, and executes `/bin/sh` correctly.
+With the shell confirmed, we know the binary accepts connections, forks a child, redirects stdio, and executes `/bin/sh` correctly.
 
-With local validation done, there was confidence to proceed to flashing commiting to the approach on the camera.
+With local validation done, there was confidence to proceed to flashing, committing to the approach on the camera.
 
 ---
 
@@ -1272,7 +1272,7 @@ dvrHelper /lib/modules /usr/bin/app.sh 127.0.0.1 9578 1 &
 
 </details>
 
-The persistant ping to `192.168.1.1` will provide confirmation that the modified RCS line is being reached on boot even before a shell connection is made.
+The persistent ping to `192.168.1.1` will provide confirmation that the modified RCS line is being reached on boot even before a shell connection is made.
 
 ---
 
@@ -1280,9 +1280,9 @@ The persistant ping to `192.168.1.1` will provide confirmation that the modified
 
 ### Repacking
 
-Now that the relevant modifications to the cramfs filesystem had been made (adding the `bind` binary to `/bin/` and the commandline injection to `/etc/init.d/rcS`), the next step was to repack it, ready for insertion into the cameras original firmware.
+Now that the relevant modifications to the cramfs filesystem had been made (adding the `bind` binary to `/bin/` and the commandline injection to `/etc/init.d/rcS`), the next step was to repack it, ready for insertion into the camera's original firmware.
 
-To do this, `mkcramfs` was leverages, using the command below:
+To do this, `mkcramfs` was leveraged, using the command below:
 
 ```bash
 ../../cramfs-tools/mkcramfs ./1C0000.cramfs.extracted/ new_romfs.cramfs
@@ -1290,7 +1290,7 @@ To do this, `mkcramfs` was leverages, using the command below:
 
 ![mkcramfs repacking the modified root filesystem](/assets/img/posts/XM68-remote-shell/blog/repacking-the-modified-cramfs.png)
 
-Next, a copy of the extracted firmware to repack with the implanted cramfs file system:
+Next, a copy of the extracted firmware was made to repack with the implanted cramfs file system:
 
 ```bash
 ┌──(user㉿kali)-[~/workspace/XM68/doco]
@@ -1301,7 +1301,7 @@ Next, a copy of the extracted firmware to repack with the implanted cramfs file 
 
 ### Patching the Firmware Binary
 
-With the modified cramfs filesystem repacked and a copy of the devices original firmware made, `DD` was used to insert the modified cramfs files system into `XM68-modified` at the offset `0X1C0000` without overwiting other paritions within the bin file.
+With the modified cramfs filesystem repacked and a copy of the devices original firmware made, `dd` was used to insert the modified cramfs file system into `XM68-modified` at the offset `0x1C0000` without overwriting other partitions within the bin file.
 
 ```bash
 dd if=new_romfs.cramfs of=XM68-modified.bin bs=1 seek=$((0x1C0000)) conv=notrunc
@@ -1312,13 +1312,13 @@ dd if=new_romfs.cramfs of=XM68-modified.bin bs=1 seek=$((0x1C0000)) conv=notrunc
 - `seek=$((0x1C0000))` - positions the write at byte offset 1,835,008, the start of the romfs partition.
 - `conv=notrunc` - ensures the surrounding partitions (kernel, squashfs user, jffs2) are preserved verbatim in the output file.
 
-We now have a version of the cameras firmware that has been implanted with the `bind` shell and will run it on boot.
+We now have a version of the camera's firmware that has been implanted with the `bind` shell and will run it on boot.
 
 ---
 
 ## 9. Reflashing the Device
 
-With the modified versions of the camera's firmware perpared (including the `bind` shell binary and command injection in `etc/init.d/rcS`), the Camera's SPI flash memory was connected to the Kali VM using the `ch341a`, and `XM68-modified.bin` was written back to it with the following command:
+With the modified versions of the camera's firmware prepared (including the `bind` shell binary and command injection in `etc/init.d/rcS`), the Camera's SPI flash memory was connected to the Kali VM using the `ch341a`, and `XM68-modified.bin` was written back to it with the following command:
 
 ```bash
 sudo flashrom -p ch341a_spi -w XM68-modified.bin
@@ -1340,7 +1340,7 @@ After writing the modified firmware to the flash IC it was re-soldered to the ca
 
 ## 10. Proof of Shell
 
-With the flash chip resoldered to the board, it was connected to the Kali VM via a USB ethernet adapter (`eth1`), which was confiured as follows:
+With the flash chip resoldered to the board, it was connected to the Kali VM via a USB ethernet adapter (`eth1`), which was configured as follows:
 
 ```bash
 ip a
@@ -1390,7 +1390,7 @@ Now that port 4444 was observed, the following attempt was made to connect to it
 
 ![nc connecting to port 4444 on the camera, yielding a root shell](/assets/img/posts/XM68-remote-shell/blog/nc-connecting-to-port-4444-from-kali-host.png)
 
-`SUCCESS!` A Root shell was established with persistentance across reboots and access to the full filesystem including the live jffs2 persistent storage at `/mnt/mtd` and the cloud-connectivity logs at `/var/sofia.log` was obtained whilst the device is running.
+`SUCCESS!` A root shell was established with persistence across reboots and access to the full filesystem including the live jffs2 persistent storage at `/mnt/mtd` and the cloud-connectivity logs at `/var/sofia.log` was obtained whilst the device is running.
 
 ---
 
@@ -1435,19 +1435,19 @@ None of these controls exist in the current firmware.
 
 ## Conclusion
 
-The XM68 is a capable camera for the price, offering cloud connectivity and a generally simple user experience at an affordable price. Despite this, the camera lacks crucial seceurity features to prevent the execution of unsigned/verfied code. Consumers should be conscious of these issues when purching such devices and wegigh up their risk apetite before purchasing such a device.
+The XM68 is a capable camera for the price, offering cloud connectivity and a generally simple user experience at an affordable price. Despite this, the camera lacks crucial security features to prevent the execution of unsigned/verified code. Consumers should be conscious of these issues when purchasing such devices and weigh up their risk appetite before purchasing such a device.
 
-Its no secret that cheap electronics don't prioritise security, focusing on a mimial viable product, and the opportunity to exploit these shortcommings has been a great expeience, teaching me vaulable skills about firmware signing and checksums and how their absence in a devices firware can lead to it running unsigned code.
+It's no secret that cheap electronics don't prioritise security, focusing on a minimal viable product, and the opportunity to exploit these shortcomings has been a great experience, teaching me valuable skills about firmware signing and checksums and how their absence in a device's firmware can lead to it running unsigned code.
 
 ---
 
-## Appendicies
+## Appendices
 
 ### Appendix A : U-Boot Console
 
 #### UBoot connection
 
-Another point of interest for further analysis are three pins o~n the back of the main camera PCB which are for connecting over UART:
+Another point of interest for further analysis are three pins on the back of the main camera PCB which are for connecting over UART:
 
 ![Main PCB rear showing UART connection pins](/assets/img/posts/XM68-remote-shell/teardown/006-main-pcb-back-uart.png)
 
@@ -1471,7 +1471,7 @@ Using the `env` command once logged into the camera shows the following environm
 
 #### Uboot configuration
 
-The help command was used in uboot to list the aviable commands to issue to the device:
+The help command was used in uboot to list the available commands to issue to the device:
 
 <details markdown="1">
 <summary>U-Boot help menu</summary>
@@ -1591,11 +1591,11 @@ The output of the Binwalk command run on the extracted firmware shows a secondar
 
 ![CramFS filesystem at 0x770000 (custom)](/assets/img/posts/XM68-remote-shell/firmware-extraction/770000-cramfs-filesystem.png)
 
-`77000` is not the focus of this research, but there are some interesting configuration files in this parition.
+`77000` is not the focus of this research, but there are some interesting configuration files in this partition.
 
 ### Appendix C: Testing public CVE
 
-In addition to the research conducted in ths report, the `CVE-2025-65857` exploitation was attempted, with the results listed below:
+In addition to the research conducted in this report, the `CVE-2025-65857` exploitation was attempted, with the results listed below:
 
 testing other publically known exploits:
 
